@@ -47,8 +47,6 @@ CFG = {
 
     # expensive research blocks
     "run_oof_baseline": MODE == "train",
-    "run_probe_check": MODE == "train",
-    "run_probe_grid": MODE == "train",
 
     # inference
     "batch_files": 16,
@@ -78,10 +76,11 @@ CFG = {
 
 CFG["full_cache_work_dir"].mkdir(parents=True, exist_ok=True)
 
-print("TensorFlow:", tf.__version__)
-print("Competition dir exists:", BASE.exists())
-print("Model dir exists:", MODEL_DIR.exists())
+#print("TensorFlow:", tf.__version__)
+#print("Competition dir exists:", BASE.exists())
+#print("Model dir exists:", MODEL_DIR.exists())
+"""
 print(json.dumps(
     {k: (str(v) if isinstance(v, Path) else v) for k, v in CFG.items()},
     indent=2
-))
+))"""

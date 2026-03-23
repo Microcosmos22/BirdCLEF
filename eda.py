@@ -96,19 +96,6 @@ sc_clean = (
     .reset_index(name="label_list")
 )
 
-# print(sc_clean.columns)
-# Index(['filename', 'start', 'end', 'label_list'], dtype='object')
-"""
-filename  ...                                         label_list0
-BC2026_Train_0001_S08_20250606_030007.ogg  ...  [47158son13, 47158son17, 47158son22, 47158son2...1    BC2026_Train_0001_S08_20250606_030007.ogg  ...  [47158son13, 47158son17, 47158son21, 47158son2]
-"""
-#for name, group in soundscape_labels.groupby(["filename", "start", "end"]):
-#    print(name, group)
-"""
-('BC2026_Train_0044_S22_20220124_023000.ogg', '00:00:10', '00:00:15')                                       filename     start       end       primary_label
-320  BC2026_Train_0044_S22_20220124_023000.ogg  00:00:10  00:00:15  22973;517063;65380
-332  BC2026_Train_0044_S22_20220124_023000.ogg  00:00:10  00:00:15  22973;517063;65380
-"""
 
 sc_clean["start_sec"] = pd.to_timedelta(sc_clean["start"]).dt.total_seconds().astype(int)
 sc_clean["end_sec"] = pd.to_timedelta(sc_clean["end"]).dt.total_seconds().astype(int)
@@ -120,12 +107,8 @@ This concatenates/appends some new columns, the ones from the dictionary from th
 meta = sc_clean["filename"].apply(parse_soundscape_filename).apply(pd.Series)
 sc_clean = pd.concat([sc_clean, meta], axis=1)
 
-# Fully-labeled files
-print(sc_clean.head())
-print(sc_clean.columns)
-
 windows_per_file = sc_clean.groupby("filename").size()
-print(windows_per_file)
+
 full_files = sorted(windows_per_file[windows_per_file == N_WINDOWS].index.tolist())
 sc_clean["file_fully_labeled"] = sc_clean["filename"].isin(full_files)
 
@@ -133,7 +116,6 @@ sc_clean["file_fully_labeled"] = sc_clean["filename"].isin(full_files)
 label_to_idx = {c: i for i, c in enumerate(PRIMARY_LABELS)}
 Y_SC = np.zeros((len(sc_clean), N_CLASSES), dtype=np.uint8)
 
-print([len(i) for i in sc_clean["label_list"]])
 
 for i, labels in enumerate(sc_clean["label_list"]):
     idxs = [label_to_idx[lbl] for lbl in labels if lbl in label_to_idx]
@@ -148,8 +130,30 @@ full_truth = (
 
 Y_FULL_TRUTH = Y_SC[full_truth["index"].to_numpy()]
 
-print("sc_clean:", sc_clean.shape)
-print("Y_SC:", Y_SC.shape, Y_SC.dtype)
-print("Full files:", len(full_files))
-print("Trusted full windows:", len(full_truth))
-print("Active classes in full windows:", int((Y_FULL_TRUTH.sum(axis=0) > 0).sum()))
+
+if __name__ == "__main__":
+    """
+    In BirdCLEF soundscape labels, it's common that:
+    The same 5-second window appears multiple times
+    Each row may list different species
+    """
+    # Fully-labeled files
+    print(f"SOUNDSCAPE_LABELS LEN: {len(soundscape_labels)}")
+    print(soundscape_labels.head())
+    print(soundscape_labels.columns)
+    print(f"SC_CLEAN LEN: {len(sc_clean)}")
+    print(sc_clean.head())
+    print(sc_clean.columns)
+
+    soundscape_labels.to_csv("soundscape_labels.csv")
+    sc_clean.to_csv("sc_clean.csv")
+
+    #print([len(i) for i in sc_clean["label_list"]])
+
+    print(windows_per_file)
+
+    print("sc_clean:", sc_clean.shape)
+    print("Y_SC:", Y_SC.shape, Y_SC.dtype)
+    print("Full files:", len(full_files))
+    print("Trusted full windows:", len(full_truth))
+    print("Active classes in full windows:", int((Y_FULL_TRUTH.sum(axis=0) > 0).sum()))

@@ -20,16 +20,15 @@ from tqdm.auto import tqdm
 
 # Cell 3 — Load Perch, mapping, and selective frog proxies
 BEST = CFG["best_fusion"]
-birdclassifier = tf.saved_model.load(str(MODEL_DIR))
+birdclassifier = tf.saved_model.load("../data/perch")
 infer_fn = birdclassifier.signatures["serving_default"]
 
+
 bc_labels = (
-    pd.read_csv(MODEL_DIR / "assets" / "labels.csv")
+    pd.read_csv("../data/labels.csv")
     .reset_index()
     .rename(columns={"index": "bc_index", "inat2024_fsd50k": "scientific_name"})
 )
-
-print(bc_labels.head())
 
 NO_LABEL_INDEX = len(bc_labels)
 

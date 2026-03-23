@@ -18,14 +18,8 @@ from sklearn.preprocessing import StandardScaler
 
 from tqdm.auto import tqdm
 
-# Cell 16 — Infer Perch on hidden test with embeddings
 test_paths = sorted((BASE / "test_soundscapes").glob("*.ogg"))
-
-if len(test_paths) == 0:
-    print(f"Hidden test not mounted. Dry-run on first {CFG['dryrun_n_files']} train soundscapes.")
-    test_paths = sorted((BASE / "train_soundscapes").glob("*.ogg"))[:CFG["dryrun_n_files"]]
-else:
-    print(f"Hidden test files: {len(test_paths)}")
+# Cell 16 — Infer Perch on hidden test with embeddings
 
 meta_test, scores_test_raw, emb_test = infer_perch_with_embeddings(
     test_paths,
