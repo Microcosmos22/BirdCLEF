@@ -25,7 +25,7 @@ from tqdm.auto import tqdm
 warnings.filterwarnings("ignore")
 tf.experimental.numpy.experimental_enable_numpy_behavior()
 
-BASE = Path(".\\data")
+BASE = Path("..\\data")
 MODEL_DIR = Path("/kaggle/input/models/google/bird-vocalization-classifier/tensorflow2/perch_v2_cpu/1")
 
 SR = 32000

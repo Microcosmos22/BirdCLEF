@@ -1,4 +1,22 @@
 from config import *
+import gc
+import json
+import re
+import warnings
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import soundfile as sf
+import tensorflow as tf
+
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import GroupKFold
+from sklearn.preprocessing import StandardScaler
+
+from tqdm.auto import tqdm
 
 
 taxonomy = pd.read_csv(BASE / "taxonomy.csv")
@@ -39,6 +57,9 @@ def parse_soundscape_labels(x):
 FNAME_RE = re.compile(r"BC2026_(?:Train|Test)_(\d+)_(S\d+)_(\d{8})_(\d{6})\.ogg")
 
 def parse_soundscape_filename(name):
+    """
+    From the the filename, it gets the properties below and returns a dictionary with them
+    """
     m = FNAME_RE.match(name)
     if not m:
         return {
@@ -93,17 +114,26 @@ sc_clean["start_sec"] = pd.to_timedelta(sc_clean["start"]).dt.total_seconds().as
 sc_clean["end_sec"] = pd.to_timedelta(sc_clean["end"]).dt.total_seconds().astype(int)
 sc_clean["row_id"] = sc_clean["filename"].str.replace(".ogg", "", regex=False) + "_" + sc_clean["end_sec"].astype(str)
 
+"""
+This concatenates/appends some new columns, the ones from the dictionary from the parse function
+"""
 meta = sc_clean["filename"].apply(parse_soundscape_filename).apply(pd.Series)
 sc_clean = pd.concat([sc_clean, meta], axis=1)
 
 # Fully-labeled files
+print(sc_clean.head())
+print(sc_clean.columns)
+
 windows_per_file = sc_clean.groupby("filename").size()
+print(windows_per_file)
 full_files = sorted(windows_per_file[windows_per_file == N_WINDOWS].index.tolist())
 sc_clean["file_fully_labeled"] = sc_clean["filename"].isin(full_files)
 
 # Multi-hot label matrix aligned with sc_clean row order
 label_to_idx = {c: i for i, c in enumerate(PRIMARY_LABELS)}
 Y_SC = np.zeros((len(sc_clean), N_CLASSES), dtype=np.uint8)
+
+print([len(i) for i in sc_clean["label_list"]])
 
 for i, labels in enumerate(sc_clean["label_list"]):
     idxs = [label_to_idx[lbl] for lbl in labels if lbl in label_to_idx]
