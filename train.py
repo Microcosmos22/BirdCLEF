@@ -36,9 +36,9 @@ if __name__=="__main__":
     DEVICE = "cpu"
     model = BirdModel(NUM_CLASSES)
     model = model.to(DEVICE)
-    model.load_state_dict(
-        torch.load("bird_model20260526_195539.pth")
-    )
+    """model.load_state_dict(
+        torch.load("../bird_model20260526_195539.pth")
+    )"""
 
     model.eval()
     criterion = nn.BCEWithLogitsLoss()
@@ -91,7 +91,7 @@ if __name__=="__main__":
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             torch.save(
                 model.state_dict(),
-                "bird_model"+timestamp+".pth"
+                "../bird_model"+timestamp+".pth"
             )
 
             plt.plot(losses)
