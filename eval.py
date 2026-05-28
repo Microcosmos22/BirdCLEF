@@ -68,32 +68,3 @@ if __name__=="__main__":
 
     print(
         f"Val per sample loss {val_persample_loss:.4f} | ")
-
-
-    """ ######### """
-    model.load_state_dict(
-        torch.load("../bird_model_4img.pth")
-    )
-
-
-    for x, y in tqdm(val_loader):
-        x = x.to(DEVICE)
-
-        model.eval()
-
-        with torch.no_grad():
-            logits = model(x)
-
-        probs = torch.sigmoid(logits)
-        probs = torch.where(
-            probs < 1e-1,
-            torch.tensor(0.0, device=probs.device),
-            probs
-        )
-
-        loss = criterion(logits, y)
-
-        val_persample_loss += loss.item()/len(val_loader)
-
-    print(
-        f"Val per sample loss {val_persample_loss:.4f} | ")
