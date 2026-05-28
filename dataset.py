@@ -96,7 +96,7 @@ class BirdDataset(Dataset):
         return mel, target
 
 
-df = pd.read_csv("../data/train_tiny.csv").iloc[:10]
+df = pd.read_csv("../data/train.csv").iloc[:1000]
 print(df.shape)
 df = df.dropna(subset=["filename", "primary_label"])
 
@@ -124,11 +124,11 @@ label2id = {
 NUM_CLASSES = 235
 
 
-print(f"N of species in data: {len(label2id)}")
+"""print(f"N of species in data: {len(label2id)}")
 print([
     label2id[label]
     for label in df["primary_label"].unique()
-])
+])"""
 
 train_df, val_df = train_test_split(
     df,

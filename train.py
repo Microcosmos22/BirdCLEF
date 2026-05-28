@@ -36,9 +36,9 @@ if __name__=="__main__":
     DEVICE = "cpu"
     model = BirdModel(NUM_CLASSES)
     model = model.to(DEVICE)
-    """model.load_state_dict(
-        torch.load("../bird_model20260526_195539.pth")
-    )"""
+    model.load_state_dict(
+        torch.load("../bird_model20260528_202956.pth")
+    )
 
     model.eval()
     criterion = nn.BCEWithLogitsLoss()
@@ -52,7 +52,9 @@ if __name__=="__main__":
     for epoch in range(200):
 
         model.train()
-        train_loss = 0
+
+        ########
+        train_persample_loss = 0
 
         for x, y in tqdm(train_loader):
 
@@ -66,25 +68,24 @@ if __name__=="__main__":
             loss.backward()
             optimizer.step()
 
-            train_loss += loss.item()
-            losses.append(loss.item())
+            train_persample_loss += loss.item()/len(train_loader)
 
             model.eval()
-            val_loss = 0
-            with torch.no_grad():
 
-                for x, y in val_loader:
-                    x = x.to(DEVICE)
-                    y = y.to(DEVICE)
+        ########
+        val_persample_loss = 0
+        with torch.no_grad():
 
-                    logits = model(x)
-                    loss = criterion(logits, y)
-                    val_loss += loss.item()
+            for x, y in val_loader:
+                x = x.to(DEVICE)
+                y = y.to(DEVICE)
 
-            val_loss /= len(val_loader)
-            val.append(loss.item())
+                logits = model(x)
+                loss = criterion(logits, y)
 
-        train_loss /= len(train_loader)
+                val_persample_loss += loss.item()/len(val_loader)
+
+
 
         if epoch % 3 == 0:
 
@@ -100,4 +101,5 @@ if __name__=="__main__":
 
     print(
         f"Epoch {epoch+1} | "
-        f"Train {train_loss:.4f} | ")
+        f"Train per sample loss {train_persample_loss:.4f} | "
+        f"Val per sample loss {val_persample_loss:.4f} | ")
