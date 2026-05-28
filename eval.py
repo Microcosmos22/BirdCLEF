@@ -10,7 +10,7 @@ if __name__=="__main__":
     model = BirdModel(NUM_CLASSES)
     model = model.to(DEVICE)
     model.load_state_dict(
-        torch.load("../bird_model20260526_195539.pth")
+        torch.load("../bird_model20260528_170046.pth")
     )
 
 
