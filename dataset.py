@@ -96,7 +96,7 @@ class BirdDataset(Dataset):
         return mel, target
 
 
-df = pd.read_csv("../data/train.csv").iloc[:1000]
+df = pd.read_csv("../data/train.csv").iloc[:5000]
 print(df.shape)
 df = df.dropna(subset=["filename", "primary_label"])
 
