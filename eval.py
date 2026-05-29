@@ -43,7 +43,7 @@ if __name__=="__main__":
 
     """ ######### """
     model.load_state_dict(
-        torch.load("../bird_model20260528_225232.pth")
+        torch.load("../bird_model5K20260528_233112.pth")
     )
 
 
