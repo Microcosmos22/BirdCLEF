@@ -29,6 +29,23 @@ noise_files = [
     "noise/wind.wav"
 ]
 
+def df_to_species(df):
+    counts = df["primary_label"].value_counts()
+    df["species_count"] = df["primary_label"].map(counts)
+
+    label2id = {
+        k: v
+        for v, k in enumerate(labels)
+    }
+
+    print(f"N of species in data: {len(label2id)}")
+    print([
+        label2id[label]
+        for label in df["primary_label"].unique()
+    ])
+
+    return df, label2id
+
 class BirdDataset(Dataset):
 
     def __init__(self, df, label2id, train=True):
@@ -96,19 +113,20 @@ class BirdDataset(Dataset):
         return mel, target
 
 
-df = pd.read_csv("../data/train.csv").iloc[:1000]
+df = pd.read_csv("../data/train.csv").iloc[:10000]
+""" SAFE STRATIFY """
+### Count how many "primary_label" occurrences. bool mask >=2. grab only true rows, get their index(primary_label). ####
+vc = df["primary_label"].value_counts()
+df = df[df["primary_label"].map(vc) > 1]
+
 print(df.shape)
 df = df.dropna(subset=["filename", "primary_label"])
 
+NUM_CLASSES = 235
 
 labels = sorted(
     df["primary_label"].unique()
 )
-
-
-counts = df["primary_label"].value_counts()
-df["species_count"] = df["primary_label"].map(counts)
-#df = df[df["species_count"] >= 3]
 
 """
 converts a 6 digit key into an ID (0-235)
@@ -116,24 +134,24 @@ converts a 6 digit key into an ID (0-235)
 181726 -> 1
 etc.
 """
-label2id = {
-    k: v
-    for v, k in enumerate(labels)
-}
 
-NUM_CLASSES = 235
-
-
-"""print(f"N of species in data: {len(label2id)}")
-print([
-    label2id[label]
-    for label in df["primary_label"].unique()
-])"""
+df, label2id = df_to_species(df)
 
 train_df, val_df = train_test_split(
     df,
+    test_size=0.2,
+    random_state=42,
+    stratify = df["primary_label"]
+)
+
+vc = val_df["primary_label"].value_counts()
+val_df = val_df[val_df["primary_label"].map(vc) > 1]
+
+val_df, test_df = train_test_split(
+    val_df,
     test_size=0.5,
-    random_state=42
+    random_state=42,
+    stratify = val_df["primary_label"]
 )
 
 train_ds = BirdDataset(
@@ -144,6 +162,12 @@ train_ds = BirdDataset(
 
 val_ds = BirdDataset(
     val_df,
+    label2id,
+    train=False
+)
+
+test_ds = BirdDataset(
+    test_df,
     label2id,
     train=False
 )
@@ -162,10 +186,40 @@ val_loader = DataLoader(
     num_workers=2
 )
 
-if __name__=="__main__":
-    print("dataset")
+test_loader = DataLoader(
+    test_ds,
+    batch_size=BATCH_SIZE,
+    shuffle=False,
+    num_workers=2
+)
 
-    labels = sorted(
-        df["primary_label"].unique()
-    )
-    print(label2id)
+if __name__=="__main__":
+    train_df["latitude"] = train_df["latitude"].round(0)
+    train_df["longitude"] = train_df["longitude"].round(0)
+
+    lat_lon = train_df.groupby(
+        ["latitude", "longitude"]
+    ).size()
+    lat_lon_label = train_df.groupby(
+        ["latitude", "longitude", "primary_label"]
+    ).size()
+
+    prior = lat_lon_label / lat_lon
+
+    global_prior = df["primary_label"].value_counts(normalize=True)
+
+    print(global_prior)
+
+    lon = test_df.iloc[0]["longitude"].round(0)
+    lat = test_df.iloc[0]["latitude"].round(0)
+    species = test_df.iloc[0]["primary_label"]
+
+    try:
+        p = prior.loc[(lat, lon, species)]
+    except KeyError:
+        p = global_prior.get(species, 1.0 / NUM_CLASSES)
+
+    print(f" Prior value: {p}")
+
+    print(prior)
+    print(prior.isin([1]))

@@ -1,10 +1,11 @@
 from train import *
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 if __name__=="__main__":
 
     criterion = nn.BCEWithLogitsLoss(reduction="sum")
 
-    val_persample_loss = 0.0
+    test_persample_loss = 0.0
     total_samples = 0
 
     sol = pd.read_csv("../data/sample_submission.csv")
@@ -15,17 +16,20 @@ if __name__=="__main__":
     model = BirdModel(NUM_CLASSES)
     model = model.to(DEVICE)
     model.load_state_dict(
-        torch.load("../bird_model20260528_221947.pth")
+        torch.load("../bird_model5K20260529_002038.pth")
     )
+    df, label2id = df_to_species(test_df)
+    logitslist = []
+    ytruelist = []
 
-
-    for x, y in tqdm(val_loader):
+    for x, y in tqdm(test_loader):
         x = x.to(DEVICE)
 
         model.eval()
 
         with torch.no_grad():
             logits = model(x)
+            logitslist.append(logits)
 
         probs = torch.sigmoid(logits)
         probs = torch.where(
@@ -33,38 +37,26 @@ if __name__=="__main__":
             torch.tensor(0.0, device=probs.device),
             probs
         )
-
+        y_pred = np.argmax(probs, axis=1)
+        ytruelist.append(y)
         loss = criterion(logits, y)
 
-        val_persample_loss += loss.item()/len(val_loader)
+        test_persample_loss += loss.item()/len(test_loader)
 
     print(
-        f"Val per sample loss {val_persample_loss:.4f} | ")
+        f"test per sample loss {test_persample_loss:.4f} | ")
+    # 4. Calculate metrics
+
+    # 4. Calculate metrics
+    precision = precision_score(ytruelist, logitslist)
+    recall = recall_score(ytruelist, logitslist)
+    f1 = f1_score(ytruelist, logitslist)
+
+    print(f"Precision: {precision:.2f}")
+    print(f"Recall: {recall:.2f}")
+    print(f"F1 Score: {f1:.2f}")
 
     """ ######### """
     model.load_state_dict(
-        torch.load("../bird_model20260528_202956.pth")
+        torch.load("../bird_model5K20260528_233112.pth")
     )
-
-
-    for x, y in tqdm(val_loader):
-        x = x.to(DEVICE)
-
-        model.eval()
-
-        with torch.no_grad():
-            logits = model(x)
-
-        probs = torch.sigmoid(logits)
-        probs = torch.where(
-            probs < 1e-1,
-            torch.tensor(0.0, device=probs.device),
-            probs
-        )
-
-        loss = criterion(logits, y)
-
-        val_persample_loss += loss.item()/len(val_loader)
-
-    print(
-        f"Val per sample loss {val_persample_loss:.4f} | ")
