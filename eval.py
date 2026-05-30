@@ -22,7 +22,7 @@ if __name__=="__main__":
     logitslist = []
     ytruelist = []
 
-    for x, y in tqdm(test_loader):
+    for i, (x, y) in tqdm(enumerate(test_loader)):
         x = x.to(DEVICE)
 
         model.eval()
@@ -43,11 +43,37 @@ if __name__=="__main__":
 
         test_persample_loss += loss.item()/len(test_loader)
 
+
+
+        lon = test_df.iloc[i]["longitude"].round(0)
+        lat = test_df.iloc[i]["latitude"].round(0)
+        species = test_df.iloc[i]["primary_label"]
+
+        try:
+            priorprob = prior.loc[(lat, lon, species)]
+        except KeyError:
+            priorprob = global_prior.get(species, 1.0 / NUM_CLASSES)
+
+        id = label2id[species]
+        priorvec = torch.zeros((NUM_CLASSES))
+        priorvec[id] = 1
+
+        print(id)
+        print(priorvec)
+
+        alpha = 0.5
+        mixed_prob = probs * (priorprob ** alpha)
+
+        #print(f" Mixed prob: {torch.round(mixed_prob * 100) / 100} Audio prob: {torch.round(torch.tensor(probs) * 100) / 100} Prior value: {torch.round(torch.tensor(priorprob) * 100) / 100}")
+
+
     print(
         f"test per sample loss {test_persample_loss:.4f} | ")
     # 4. Calculate metrics
 
-    # 4. Calculate metrics
+    # 4. Calculate metrics. Compute binary probvector from logits (model output)
+    predictions = (np.array(logitslist) > 0.0).astype(int)
+
     precision = precision_score(ytruelist, logitslist)
     recall = recall_score(ytruelist, logitslist)
     f1 = f1_score(ytruelist, logitslist)

@@ -188,38 +188,25 @@ val_loader = DataLoader(
 
 test_loader = DataLoader(
     test_ds,
-    batch_size=BATCH_SIZE,
+    batch_size=1,
     shuffle=False,
     num_workers=2
 )
 
+train_df["latitude"] = train_df["latitude"].round(0)
+train_df["longitude"] = train_df["longitude"].round(0)
+
+lat_lon = train_df.groupby(
+    ["latitude", "longitude"]
+).size()
+lat_lon_label = train_df.groupby(
+    ["latitude", "longitude", "primary_label"]
+).size()
+
+prior = lat_lon_label / lat_lon
+
+global_prior = df["primary_label"].value_counts(normalize=True)
+
+
 if __name__=="__main__":
-    train_df["latitude"] = train_df["latitude"].round(0)
-    train_df["longitude"] = train_df["longitude"].round(0)
-
-    lat_lon = train_df.groupby(
-        ["latitude", "longitude"]
-    ).size()
-    lat_lon_label = train_df.groupby(
-        ["latitude", "longitude", "primary_label"]
-    ).size()
-
-    prior = lat_lon_label / lat_lon
-
-    global_prior = df["primary_label"].value_counts(normalize=True)
-
-    print(global_prior)
-
-    lon = test_df.iloc[0]["longitude"].round(0)
-    lat = test_df.iloc[0]["latitude"].round(0)
-    species = test_df.iloc[0]["primary_label"]
-
-    try:
-        p = prior.loc[(lat, lon, species)]
-    except KeyError:
-        p = global_prior.get(species, 1.0 / NUM_CLASSES)
-
-    print(f" Prior value: {p}")
-
-    print(prior)
-    print(prior.isin([1]))
+    print("test")
