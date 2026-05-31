@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
             total_loss += loss.item()
 
-            if i%30==0:
+            if i % 30 == 0:
                 np.save(logitslist_train_pred_5K002038model, "modeloutputs.npy")
                 torch.save(
                     meta_model.state_dict(),
