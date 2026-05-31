@@ -37,12 +37,12 @@ def df_to_species(df):
         k: v
         for v, k in enumerate(labels)
     }
-
+    """
     print(f"N of species in data: {len(label2id)}")
     print([
         label2id[label]
         for label in df["primary_label"].unique()
-    ])
+    ])"""
 
     return df, label2id
 
