@@ -14,5 +14,11 @@ Lastly, a 2-layer Attention pooling block implemented by `torch.nn` will map the
 
 ## 3. Training
 We use the typical overfitting procedure: Overfit a tiny dataset of 4 audio clips to ensure the data pipeline is working. Once this is done, we progressively add more data and help the model to generalize.
-4. Priors
-5. Stacking
+4. Priors and stacking
+What is priors? What is stacking?
+
+1. Only audio AI model
+2. Use priors with fixed blending parameter alpha
+3. Train meta-model on alpha
+4. Blend also different models
+
