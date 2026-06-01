@@ -8,7 +8,8 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 import torchaudio.transforms as T
 from pathlib import Path
-
+import matplotlib.pyplot as plt
+import librosa.display
 SR = 32000
 
 DURATION = 5
@@ -112,6 +113,53 @@ class BirdDataset(Dataset):
 
         return mel, target
 
+def plot_single_sample(dataset, idx=0):
+    """Loads a single raw audio sample, extracts features, and plots everything."""
+    # 1. Fetch the metadata row
+    row = dataset.df.iloc[idx]
+    filepath = Path("..") / "data" / "train_audio" / str(row["filename"])
+
+    # 2. Re-create the transformations step-by-step
+    audio = dataset.load_audio(filepath)
+    mel_db = dataset.audio_to_mel(audio)
+
+    # 3. Get the PyTorch tensors from the dataset
+    mel_tensor, target_tensor = dataset[idx]
+
+    # 4. Set up the plotting grid
+    fig, axes = plt.subplots(4, 1, figsize=(12, 16))
+    fig.suptitle(f"Sample Species: {row['primary_label']} (ID: {dataset.label2id[row['primary_label']]})", fontsize=16, fontweight='bold')
+
+    # Plot 1: Raw Audio Waveform
+    librosa.display.waveshow(audio, sr=SR, ax=axes[0], color='b')
+    axes[0].set_title("1. Audio Sequence (Waveform)", fontsize=12)
+    axes[0].set_ylabel("Amplitude")
+    axes[0].set_xlabel("Time (seconds)")
+
+    # Plot 2: Mel Spectrogram (dB)
+    img = librosa.display.specshow(mel_db, sr=SR, hop_length=HOP_LENGTH, x_axis='time', y_axis='mel', ax=axes[1], cmap='viridis')
+    fig.colorbar(img, ax=axes[1], format='%+2.0f dB')
+    axes[1].set_title("2. Mel Spectrogram (Decibels)", fontsize=12)
+
+    # Plot 3: PyTorch Feature Image Tensor
+    # We remove the channel dimension using .squeeze(0) to plot it
+    img_tensor = axes[2].imshow(mel_tensor.squeeze(0).numpy(), aspect='auto', origin='lower', cmap='magma')
+    fig.colorbar(img_tensor, ax=axes[2])
+    axes[2].set_title(f"3. Feature Image (PyTorch Tensor Shape: {list(mel_tensor.shape)})", fontsize=12)
+    axes[2].set_ylabel("Mel Bins")
+    axes[2].set_xlabel("Time Frames")
+
+    # Plot 4: One-Hot Encoded Target Vector
+    axes[3].plot(target_tensor.numpy(), color='red', linewidth=1.5)
+    axes[3].set_title(f"4. One-Hot Encoded Target Vector Y (Total Classes: {len(target_tensor)})", fontsize=12)
+    axes[3].set_ylabel("Activation (0 or 1)")
+    axes[3].set_xlabel("Class Index ID")
+    axes[3].set_xlim(0, len(target_tensor))
+    axes[3].grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()
+
 
 df = pd.read_csv("../data/train.csv").iloc[:10000]
 """ SAFE STRATIFY """
@@ -209,4 +257,9 @@ global_prior = df["primary_label"].value_counts(normalize=True)
 
 
 if __name__=="__main__":
-    print("test")
+    print("Dataset Shapes:")
+    print(f"Train samples: {len(train_ds)}, Validation samples: {len(val_ds)}")
+
+    # Call the visualization function here
+    print("\nGenerating sample diagnostic plots...")
+    plot_single_sample(train_ds, idx=0)

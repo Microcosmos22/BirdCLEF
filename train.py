@@ -37,7 +37,7 @@ if __name__=="__main__":
     model = BirdModel(NUM_CLASSES)
     model = model.to(DEVICE)
     model.load_state_dict(
-        torch.load("../bird_model5K20260529_182139.pth")
+        torch.load("../bird_model5K20260531_125408.pth")
     )
 
     model.eval()
@@ -92,7 +92,7 @@ if __name__=="__main__":
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             torch.save(
                 model.state_dict(),
-                "../bird_model5K"+timestamp+".pth"
+                "../bird_model10K"+timestamp+".pth"
             )
 
             plt.plot(train_persample_loss)

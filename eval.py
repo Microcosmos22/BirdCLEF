@@ -109,7 +109,7 @@ if __name__=="__main__":
 
         y_predlist_audio.extend(y_pred_audio)
         y_predlist_fixed.extend(y_pred_fixed)
-        y_predlist_meta.extend(y_pred_mix)
+        y_predlist_meta.extend(y_pred_meta)
         y_truelist.extend(y_true)
         #print(f" Mixed prob: {torch.round(mixed_prob * 100) / 100} Audio prob: {torch.round(torch.tensor(probs) * 100) / 100} Prior value: {torch.round(torch.tensor(priorprob) * 100) / 100}")
 
