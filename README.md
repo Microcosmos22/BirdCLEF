@@ -13,12 +13,18 @@ Lastly, a 2-layer Attention pooling block implemented by `torch.nn` will map the
 
 
 ## 3. Training
-We use the typical overfitting procedure: Overfit a tiny dataset of 4 audio clips to ensure the data pipeline is working. Once this is done, we progressively add more data and help the model to generalize.
-4. Priors and stacking
-What is priors? What is stacking?
+We use the typical overfitting procedure: *Overfit* a tiny dataset of 4 audio clips to its labels (animal species), to ensure the data pipeline is working. Once this is done, we progressively *add more data* until 10K clips/samples and help the model to generalize. Apart from the predicted class $P^{class}_Audio$, we can infer the probability of a species to appear in a certain location given the longitude and latitude (and time of the day). This is called the prior probability $P^{class}_Prior$ and can be mixed/blended with the audio prediction $P_mix = P_Audio * P_Prior ^ {\alpha}$ using a fixed $\alpha$. Finally, a *meta-model* can be trained to adjust the per-sample mix of both probabilities given how often a species has been priorly recorded at a certain location.
 
-1. Only audio AI model
-2. Use priors with fixed blending parameter alpha
-3. Train meta-model on alpha
-4. Blend also different models
+In future work, we could also blend/stack different models together using this linear meta-model, achieving best per-sample mix of outputs.
 
+In the output we can see that the meta model performs 8-times better than the AI audio predictions:
+1. Error of Only audio AI prediction
+2. Error of mixing in the priors with fixed blending parameter alpha
+3. Error of Training a meta-model on each mix
+
+    Prec.  Recall F1-Score
+audio    0.0048 0.0227 0.0070
+fix_m    0.0049 0.0242 0.0074
+meta.    0.0510 0.0642 0.0434
+
+## 
