@@ -188,7 +188,7 @@ val_loader = DataLoader(
 
 test_loader = DataLoader(
     test_ds,
-    batch_size=1,
+    batch_size=BATCH_SIZE,
     shuffle=False,
     num_workers=2
 )

@@ -6,16 +6,6 @@ from torch.optim import Adam
 if __name__ == "__main__":
     DEVICE = "cpu"
 
-    class MetaLogReg(nn.Module):
-        def __init__(self, num_classes):
-            super().__init__()
-            self.linear = nn.Linear(num_classes * 2, num_classes)
-
-        def forward(self, audio_probs, prior_probs):
-            x = torch.cat([audio_probs, prior_probs], dim=1)
-            return self.linear(x)
-
-
     meta_model = MetaLogReg(NUM_CLASSES).to(DEVICE)
     optimizer = Adam(meta_model.parameters(), lr=1e-3)
     criterion = nn.BCEWithLogitsLoss()
@@ -55,7 +45,7 @@ if __name__ == "__main__":
             total_loss += loss.item()
 
             if i % 30 == 0:
-                np.save(logitslist_train_pred_5K002038model, "modeloutputs.npy")
+                np.save("modeloutputs.npy", np.asarray(logitslist_train_pred_5K002038model))
                 torch.save(
                     meta_model.state_dict(),
                     "meta_model.pth"

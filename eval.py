@@ -2,6 +2,15 @@ from train import *
 from sklearn.metrics import precision_score, recall_score, f1_score
 from torch.nn import BCEWithLogitsLoss
 
+class MetaLogReg(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.linear = nn.Linear(num_classes * 2, num_classes)
+
+    def forward(self, audio_probs, prior_probs):
+        x = torch.cat([audio_probs, prior_probs], dim=1)
+        return self.linear(x)
+
 def get_priorvec(i):
     lon = test_df.iloc[i]["longitude"].round(0)
     lat = test_df.iloc[i]["latitude"].round(0)
@@ -19,8 +28,8 @@ def get_priorvec(i):
         pass
     return priorvec
 
-def get_priorvec_batch(i, b=BATCH_SIZE):
-    batch = train_df.iloc[i*b:i*b+b]
+def get_priorvec_batch(i, df, b=BATCH_SIZE):
+    batch = df.iloc[i*b:i*b+b]
 
     prior_list = []
 
@@ -48,6 +57,10 @@ if __name__=="__main__":
 
     criterion = nn.BCEWithLogitsLoss(reduction="sum")
 
+    meta_model = MetaLogReg(NUM_CLASSES).to("cpu")
+    meta_model.load_state_dict(
+        torch.load("meta_model.pth")
+    )
     test_persample_loss = 0.0
     total_samples = 0
 
@@ -62,41 +75,59 @@ if __name__=="__main__":
         torch.load("../bird_model5K20260529_002038.pth")
     )
     df, label2id = df_to_species(test_df)
-    y_pred = []
-    y_true = []
+    y_predlist_audio = []
+    y_predlist_fixed = []
+    y_predlist_meta = []
+    y_truelist = []
 
     for i, (x, y) in tqdm(enumerate(test_loader)):
         x = x.to(DEVICE)
         model.eval()
-        """ FORWARD PASS """
+        """ GET PRIOR PROBABILITY """
+        if (i*BATCH_SIZE+BATCH_SIZE) > df.shape[0]:
+            continue
+        priorvec = get_priorvec_batch(i, df)
 
         with torch.no_grad():
-            logits = model(x)
+            logits_audio = model(x)
 
-        p_audio = torch.sigmoid(logits).unsqueeze(0)
+        """ FORWARD PASS META MODEL """
+        p_audio = torch.sigmoid(logits_audio)
+        meta_logits = meta_model(p_audio, priorvec)
 
-        #probs = torch.where(probs < 1e-1,torch.tensor(0.0, device=probs.device),probs)
-        pred_species = np.argmax(p_audio)
-
-        """ GET PRIOR PROBABILITY """
-        priorvec = get_priorvec(i).unsqueeze(0)
-
+        """ FIXED MIX """
         alpha = 0.5
-        mixed_probs = p_audio * (priorvec.to(p_audio.device) ** alpha)
+        logits_fixed = alpha * logits_audio + (1 - alpha) * priorvec
 
-        #y_pred = torch.argmax(mixed_probs).item()
-        #print(f" priorprob: {priorprob} y_pred: {int(probs[pred_species])} y: {np.argmax(y)}")
-        pred = torch.argmax(mixed_probs).item()
-        true = torch.argmax(y).item()
+        # If you need the class id: 78
+        y_pred_meta = torch.argmax(meta_logits, dim=1).cpu().numpy()
+        y_pred_fixed = torch.argmax(logits_fixed, dim=1).cpu().numpy()
+        y_pred_audio = torch.argmax(logits_audio, dim=1).cpu().numpy()
+        y_true = torch.argmax(y, dim=1).cpu().numpy()
 
-        y_pred.append(pred)
-        y_true.append(true)
+
+
+        y_predlist_audio.extend(y_pred_audio)
+        y_predlist_fixed.extend(y_pred_fixed)
+        y_predlist_meta.extend(y_pred_mix)
+        y_truelist.extend(y_true)
         #print(f" Mixed prob: {torch.round(mixed_prob * 100) / 100} Audio prob: {torch.round(torch.tensor(probs) * 100) / 100} Prior value: {torch.round(torch.tensor(priorprob) * 100) / 100}")
 
     print(f"test per sample loss {test_persample_loss:.4f} | ")
     # 4. Calculate metrics. Compute binary probvector from logits (model output)
     #predictions = (np.array(logitslist) > 0.0).astype(int)
 
-    precision = precision_score(y_true,y_pred,average="macro",zero_division=0)
-    recall = recall_score(y_true,y_pred,average="macro",zero_division=0)
-    f1 = f1_score(y_true,y_pred,average="macro",zero_division=0)
+    precision = precision_score(y_truelist,y_predlist_audio,average="macro",zero_division=0)
+    recall = recall_score(y_truelist,y_predlist_audio,average="macro",zero_division=0)
+    f1 = f1_score(y_truelist,y_predlist_audio,average="macro",zero_division=0)
+    print(precision, recall, f1)
+
+    precision = precision_score(y_truelist,y_predlist_fixed,average="macro",zero_division=0)
+    recall = recall_score(y_truelist,y_predlist_fixed,average="macro",zero_division=0)
+    f1 = f1_score(y_truelist,y_predlist_fixed,average="macro",zero_division=0)
+    print(precision, recall, f1)
+
+    precision = precision_score(y_truelist,y_predlist_meta,average="macro",zero_division=0)
+    recall = recall_score(y_truelist,y_predlist_meta,average="macro",zero_division=0)
+    f1 = f1_score(y_truelist,y_predlist_meta,average="macro",zero_division=0)
+    print(precision, recall, f1)
