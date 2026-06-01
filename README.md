@@ -11,6 +11,7 @@ In order to obtain the features we do use a simple image encoder `efficientnet_b
 
 Lastly, a 2-layer Attention pooling block implemented by `torch.nn` will map the feature image to the corresponding class. Its selection mechanism allows to ignore silence and focus on the important parts (the sparse bird calls). In future, a self-attention block could help relate bird calls ,that are separated in time, to each other, capturing long-range dependencies.
 
+![Alternative text description](Captura.png)
 
 ## 3. Training
 We use the typical overfitting procedure: *Overfit* a tiny dataset of 4 audio clips to its labels (animal species), to ensure the data pipeline is working. Once this is done, we progressively *add more data* until 10K clips/samples and help the model to generalize. Apart from the predicted class $P^{class}_Audio$, we can infer the probability of a species to appear in a certain location given the longitude and latitude (and time of the day). This is called the prior probability $P^{class}_Prior$ and can be mixed/blended with the audio prediction $P_mix = P_Audio * P_Prior ^ {\alpha}$ using a fixed $\alpha$. Finally, a *meta-model* can be trained to adjust the per-sample mix of both probabilities given how often a species has been priorly recorded at a certain location.
@@ -22,9 +23,9 @@ In the output we can see that the meta model performs 8-times better than the AI
 2. Error of mixing in the priors with fixed blending parameter alpha
 3. Error of Training a meta-model on each mix
 
-    Prec.  Recall F1-Score
+```    Prec.  Recall F1-Score
 audio    0.0048 0.0227 0.0070
 fix_m    0.0049 0.0242 0.0074
-meta.    0.0510 0.0642 0.0434
+meta.    0.0510 0.0642 0.0434```
 
 ## 
